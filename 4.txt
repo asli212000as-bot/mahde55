@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قائمة الطلبات - متجر الورد</title>
+<style>
+body {
+  font-family: 'Tahoma', sans-serif;
+  background: #fffafc;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+.header {
+  background: #e91e63;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  font-size: 22px;
+  font-weight: bold;
+}
+.container {
+  max-width: 1000px;
+  margin: 20px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+select, input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+button {
+  background: #e91e63;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover {
+  background: #c2185b;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+th {
+  background: #f8bbd0;
+}
+@media print {
+  .controls, button { display: none; }
+  .header { background: #000; color: #fff; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">🧾 قائمة الطلبات</div>
+<div class="container">
+  <div class="controls">
+    <div>
+      <label>🔍 بحث:</label>
+      <input type="text" id="searchBox" placeholder="ابحث بالاسم أو الهاتف..." oninput="filterOrders()">
+    </div>
+    <div>
+      <label>🗂️ نوع الطلب:</label>
+      <select id="typeFilter" onchange="filterOrders()">
+        <option value="all">الكل</option>
+        <option value="ready">باقات جاهزة</option>
+        <option value="custom">باقات مخصصة</option>
+      </select>
+    </div>
+    <div>
+      <label>📅 التاريخ:</label>
+      <input type="date" id="dateFilter" onchange="filterOrders()">
+    </div>
+    <div>
+      <button onclick="window.print()">🖨️ طباعة</button>
+    </div>
+  </div>
+
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>الاسم</th>
+        <th>الهاتف</th>
+        <th>النوع</th>
+        <th>التفاصيل</th>
+        <th>السعر</th>
+        <th>الوقت</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+let allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`;
+}
+
+function loadOrders() {
+  const tbody = document.querySelector('#ordersTable tbody');
+  tbody.innerHTML = '';
+  if (allOrders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6">لا توجد طلبات حالياً 🌸</td></tr>';
+    return;
+  }
+  allOrders.forEach(o => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${o.name}</td>
+        <td>${o.phone}</td>
+        <td>${o.type === 'ready' ? 'باقة جاهزة' : 'مخصصة'}</td>
+        <td>${o.bouquet || `${o.count} ورد ${o.color} + ${o.wrap}`}</td>
+        <td>${o.price} د.ع</td>
+        <td>${o.time}</td>
+      </tr>`;
+  });
+}
+
+function filterOrders() {
+  const search = document.getElementById('searchBox').value.toLowerCase();
+  const type = document.getElementById('typeFilter').value;
+  const date = document.getElementById('dateFilter').value;
+  
+  const tbody = document.querySelector('#ordersTable tbody');
+  tbody.innerHTML = '';
+
+  const filtered = allOrders.filter(o => {
+    const matchesSearch = o.name.toLowerCase().includes(search) || o.phone.includes(search);
+    const matchesType = (type === 'all') || (type === 'ready' && o.type === 'ready') || (type === 'custom' && o.type === 'custom');
+    const matchesDate = !date || (o.time && o.time.startsWith(date));
+    return matchesSearch && matchesType && matchesDate;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6">لا توجد طلبات مطابقة 🌸</td></tr>';
+    return;
+  }
+
+  filtered.forEach(o => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${o.name}</td>
+        <td>${o.phone}</td>
+        <td>${o.type === 'ready' ? 'باقة جاهزة' : 'مخصصة'}</td>
+        <td>${o.bouquet || `${o.count} ورد ${o.color} + ${o.wrap}`}</td>
+        <td>${o.price} د.ع</td>
+        <td>${o.time}</td>
+      </tr>`;
+  });
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم الأدمن - متجر الورد</title>
+<style>
+body {font-family: 'Tahoma', sans-serif; margin:0; background:#fffafc; color:#333;}
+.header {background:#e91e63; color:#fff; text-align:center; padding:15px; font-size:22px; font-weight:bold;}
+.navbar {display:flex; justify-content:center; flex-wrap:wrap; background:#fff; padding:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.navbar button {margin:5px; padding:10px 15px; border:none; border-radius:20px; background:#f8bbd0; color:#333; font-weight:bold; cursor:pointer; transition:0.3s;}
+.navbar button:hover, .navbar button.active {background:#e91e63; color:#fff;}
+.section {display:none; padding:20px;}
+input, select, textarea {width:100%; padding:8px; margin:5px 0; border:1px solid #ccc; border-radius:5px;}
+button {background:#e91e63; color:white; border:none; border-radius:5px; padding:10px 15px; cursor:pointer; margin-top:5px;}
+button:hover {background:#c2185b;}
+table {width:100%; border-collapse:collapse; margin-top:10px;}
+th, td {border:1px solid #ddd; padding:8px; text-align:center;}
+th {background:#f8bbd0;}
+img {width:80px; height:80px; object-fit:cover; border-radius:10px;}
+</style>
+</head>
+<body>
+
+<div class="header">🌸 لوحة تحكم الأدمن</div>
+
+<div class="navbar">
+  <button class="active" onclick="showSection('bouquets')">إدارة الباقات</button>
+  <button onclick="showSection('flowers')">أنواع الورود</button>
+  <button onclick="showSection('wraps')">أنواع التغليف</button>
+  <button onclick="showSection('orders')">الطلبات</button>
+  <button onclick="showSection('messages')">الرسائل</button>
+</div>
+
+<!-- إدارة الباقات -->
+<div id="bouquets" class="section" style="display:block;">
+  <h2>إضافة باقة جديدة</h2>
+  <input type="text" id="bName" placeholder="اسم الباقة">
+  <textarea id="bDesc" placeholder="وصف الباقة"></textarea>
+  <input type="number" id="bPrice" placeholder="سعر الباقة">
+  <input type="text" id="bImg" placeholder="رابط صورة الباقة">
+  <button onclick="addBouquet()">إضافة الباقة</button>
+  <h3>الباقات الحالية</h3>
+  <table>
+    <thead><tr><th>الصورة</th><th>الاسم</th><th>الوصف</th><th>السعر</th><th>إزالة</th></tr></thead>
+    <tbody id="bouquetTable"></tbody>
+  </table>
+</div>
+
+<!-- إدارة الورود -->
+<div id="flowers" class="section">
+  <h2>الورود المتوفرة</h2>
+  <input type="text" id="flowerName" placeholder="اسم الورد (مثل: أحمر)">
+  <button onclick="addFlower()">إضافة</button>
+  <ul id="flowerList"></ul>
+  <label>سعر الورد الواحد (د.ع):</label>
+  <input type="number" id="flowerPrice">
+  <button onclick="saveFlowerPrice()">حفظ السعر</button>
+</div>
+
+<!-- إدارة التغليف -->
+<div id="wraps" class="section">
+  <h2>أنواع التغليف</h2>
+  <input type="text" id="wrapName" placeholder="اسم التغليف">
+  <input type="number" id="wrapPrice" placeholder="سعر التغليف">
+  <button onclick="addWrap()">إضافة تغليف</button>
+  <table>
+    <thead><tr><th>الاسم</th><th>السعر</th><th>إزالة</th></tr></thead>
+    <tbody id="wrapTable"></tbody>
+  </table>
+</div>
+
+<!-- الطلبات -->
+<div id="orders" class="section">
+  <h2>قائمة الطلبات</h2>
+  <table>
+    <thead><tr><th>الاسم</th><th>الهاتف</th><th>النوع</th><th>التفاصيل</th><th>السعر</th><th>الوقت</th></tr></thead>
+    <tbody id="ordersTable"></tbody>
+  </table>
+</div>
+
+<!-- الرسائل -->
+<div id="messages" class="section">
+  <h2>رسائل العملاء</h2>
+  <table>
+    <thead><tr><th>الاسم</th><th>الهاتف</th><th>الرسالة</th><th>الوقت</th></tr></thead>
+    <tbody id="messagesTable"></tbody>
+  </table>
+</div>
+
+<script>
+let bouquets = JSON.parse(localStorage.getItem('bouquets')||'[]');
+let flowers = JSON.parse(localStorage.getItem('flowers')||'["أحمر","وردي","أبيض"]');
+let wraps = JSON.parse(localStorage.getItem('wraps')||'[{"name":"تغليف بسيط","price":2000},{"name":"تغليف فاخر","price":5000}]');
+let flowerPrice = Number(localStorage.getItem('flowerPrice')||'1000');
+let orders = JSON.parse(localStorage.getItem('orders')||'[]');
+let messages = JSON.parse(localStorage.getItem('messages')||'[]');
+
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.style.display='none');
+  document.querySelectorAll('.navbar button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).style.display='block';
+  event.target.classList.add('active');
+  renderAll();
+}
+
+function addBouquet(){
+  const name=document.getElementById('bName').value.trim();
+  const desc=document.getElementById('bDesc').value.trim();
+  const price=Number(document.getElementById('bPrice').value);
+  const img=document.getElementById('bImg').value.trim();
+  if(!name||!price||!img){alert('أكمل جميع الحقول');return;}
+  bouquets.push({name,description:desc,price,image:img});
+  localStorage.setItem('bouquets',JSON.stringify(bouquets));
+  renderBouquets();
+  document.getElementById('bName').value='';
+  document.getElementById('bDesc').value='';
+  document.getElementById('bPrice').value='';
+  document.getElementById('bImg').value='';
+}
+
+function renderBouquets(){
+  const tbody=document.getElementById('bouquetTable');
+  tbody.innerHTML='';
+  bouquets.forEach((b,i)=>{
+    tbody.innerHTML+=`<tr><td><img src="${b.image}"></td><td>${b.name}</td><td>${b.description||''}</td><td>${b.price}</td><td><button onclick="removeBouquet(${i})">🗑️</button></td></tr>`;
+  });
+}
+function removeBouquet(i){
+  if(confirm('هل تريد حذف هذه الباقة؟')){
+    bouquets.splice(i,1);
+    localStorage.setItem('bouquets',JSON.stringify(bouquets));
+    renderBouquets();
+  }
+}
+
+function renderFlowers(){
+  const ul=document.getElementById('flowerList');
+  ul.innerHTML='';
+  flowers.forEach((f,i)=> ul.innerHTML+=`<li>${f} <button onclick="removeFlower(${i})">🗑️</button></li>`);
+  document.getElementById('flowerPrice').value=flowerPrice;
+}
+function addFlower(){
+  const f=document.getElementById('flowerName').value.trim();
+  if(!f)return;
+  flowers.push(f);
+  localStorage.setItem('flowers',JSON.stringify(flowers));
+  document.getElementById('flowerName').value='';
+  renderFlowers();
+}
+function removeFlower(i){
+  flowers.splice(i,1);
+  localStorage.setItem('flowers',JSON.stringify(flowers));
+  renderFlowers();
+}
+function saveFlowerPrice(){
+  const p=Number(document.getElementById('flowerPrice').value)||1000;
+  flowerPrice=p;
+  localStorage.setItem('flowerPrice',p);
+  alert('تم حفظ السعر بنجاح ✅');
+}
+
+function addWrap(){
+  const name=document.getElementById('wrapName').value.trim();
+  const price=Number(document.getElementById('wrapPrice').value);
+  if(!name||!price){alert('أدخل الاسم والسعر');return;}
+  wraps.push({name,price});
+  localStorage.setItem('wraps',JSON.stringify(wraps));
+  renderWraps();
+  document.getElementById('wrapName').value='';
+  document.getElementById('wrapPrice').value='';
+}
+function renderWraps(){
+  const tbody=document.getElementById('wrapTable');
+  tbody.innerHTML='';
+  wraps.forEach((w,i)=>tbody.innerHTML+=`<tr><td>${w.name}</td><td>${w.price}</td><td><button onclick="removeWrap(${i})">🗑️</button></td></tr>`);
+}
+function removeWrap(i){
+  wraps.splice(i,1);
+  localStorage.setItem('wraps',JSON.stringify(wraps));
+  renderWraps();
+}
+
+function renderOrders(){
+  const tbody=document.getElementById('ordersTable');
+  tbody.innerHTML='';
+  orders.forEach(o=>{
+    tbody.innerHTML+=`<tr><td>${o.name}</td><td>${o.phone}</td><td>${o.type==='ready'?'باقة جاهزة':'مخصصة'}</td><td>${o.bouquet||`${o.count} ورد ${o.color} + ${o.wrap}`}</td><td>${o.price}</td><td>${o.time}</td></tr>`;
+  });
+}
+function renderMessages(){
+  const tbody=document.getElementById('messagesTable');
+  tbody.innerHTML='';
+  messages.forEach(m=>{
+    tbody.innerHTML+=`<tr><td>${m.name}</td><td>${m.phone}</td><td>${m.msg}</td><td>${m.time}</td></tr>`;
+  });
+}
+
+function renderAll(){
+  renderBouquets();
+  renderFlowers();
+  renderWraps();
+  renderOrders();
+  renderMessages();
+}
+renderAll();
+</script>
+
+</body>
+</html>
